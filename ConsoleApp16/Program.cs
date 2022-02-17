@@ -55,29 +55,27 @@ namespace Reader
             string filePath = @"C:\Users\" + Environment.UserName + @"\Downloads\products.csv";
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("Cant find such file");
+                Console.WriteLine("File not found");
                 Environment.Exit(1);
             }
 
-            //Creating product reader object and product list
+            //Creating product reader object
             var productReader = new ProductReader();
-            List<Product> productList;
 
             //Filling list with ReadAll() method
             try
             {
-                productList = new List<Product>(productReader.ReadAll(filePath));
+                var productList = new List<Product>(productReader.ReadAll(filePath));
+
+                //Output sorted by date products 
+                Console.WriteLine("Products sorted by date:");
+                foreach (var product in productList.OrderByDescending(product => product.ProductionDate))
+                    Console.WriteLine(product.ToString());
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                throw;
             }
-
-            //Output sorted by date products 
-            Console.WriteLine("Products sorted by date:");
-            foreach (var product in productList.OrderByDescending(product => product.ProductionDate))
-                Console.WriteLine(product.ToString());
         }
     }
 }
