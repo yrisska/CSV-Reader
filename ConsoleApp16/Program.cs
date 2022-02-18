@@ -33,15 +33,52 @@ namespace Reader
     {
         public IEnumerable<Product> ReadAll(string filePath)
         {
-            using var sr = new StreamReader(filePath);
-            sr.ReadLine();// Skip first line with field names
+            StreamReader sr = null;
             string line;
+            ushort lineNumber = 1;  //line counter for csv file
+
+            //Opening a file
+            try
+            {
+                sr = new StreamReader(filePath);
+                sr.ReadLine(); // Skip first line with field names
+            }
+            catch (Exception exception)
+            {
+                System.Console.WriteLine(exception.Message);
+                Environment.Exit(0);
+            }
+
+            // Line-by-line reading file
             while ((line = sr.ReadLine()) != null)
             {
-                // Line-by-line reading file and creating <Product> objects
-                string[] values = line.Split(',');
-                yield return new Product(values[0], values[1], values[2], values[3]);
+                lineNumber++;
+                Product product = null;
+
+                //Making Product object from line
+                try
+                {
+                    var values = line.Split(',');
+                    product = new Product(values[0], values[1], values[2], values[3]);
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    System.Console.WriteLine($"Line {lineNumber} in file is missing commas" +
+                                             $"\nPress enter to continue (skip the line)");
+                    System.Console.ReadLine();
+                    continue;
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine(e.Message + $"\nIn file at line {lineNumber}" +
+                                             $"\nPress enter to continue (skip the object)");
+                    System.Console.ReadLine();
+                    continue;
+                }
+
+                yield return product;
             }
+            sr.Close();
         }
     }
 
@@ -50,32 +87,38 @@ namespace Reader
         private static void Main(string[] args)
         {
             //Finding file
-            Console.WriteLine("Please ensure that you have file \"products.csv\" in your \"Downloads\" directory.\nPress enter to continue");
-            Console.ReadLine();
-            string filePath = @"C:\Users\" + Environment.UserName + @"\Downloads\products.csv";
-            if (!File.Exists(filePath))
+            Console.WriteLine("(Enter \"q\" to quit the program, enter \"default\" to search in \"Downloads\" directory.)");
+            var filePath = "";
+            do
             {
-                Console.WriteLine("File not found");
-                Environment.Exit(1);
-            }
+                Console.WriteLine("Enter correct full file path:");
+                var userInput = Console.ReadLine();
+
+                switch (userInput)
+                {
+                    case "q":
+                        Environment.Exit(0);
+                        break;
+                    case "default":
+                        filePath = @"C:\Users\" + Environment.UserName + @"\Downloads\products.csv";
+                        break;
+                    default:
+                        filePath = userInput;
+                        break;
+                }
+
+            } while (!File.Exists(filePath));
 
             //Creating product reader object
             var productReader = new ProductReader();
 
             //Filling list with ReadAll() method
-            try
-            {
-                var productList = new List<Product>(productReader.ReadAll(filePath));
+            var productList = new List<Product>(productReader.ReadAll(filePath));
 
-                //Output sorted by date products 
-                Console.WriteLine("Products sorted by date:");
-                foreach (var product in productList.OrderByDescending(product => product.ProductionDate))
-                    Console.WriteLine(product.ToString());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+            //Output sorted by date products 
+            Console.WriteLine("Products sorted by date:");
+            foreach (var product in productList.OrderByDescending(product => product.ProductionDate)) 
+                Console.WriteLine(product.ToString());
         }
     }
 }
